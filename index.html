@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verb-Präposition-Kartei</title>
+<style>
+:root{--bg:#ebe3cf;--card:#f0e9d6;--btn:#e6dfc8;--ink:#1f2433;--red:#9b2c2c;--ok:#2f6b3f;--mute:#6b6a60}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg) radial-gradient(rgba(0,0,0,.06) 1px,transparent 1px) 0 0/5px 5px;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
+.m{font-family:"Courier New",monospace}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+header{display:flex;gap:16px;align-items:center}
+.stamp{width:72px;height:72px;border:3px dashed var(--red);border-radius:50%;display:grid;place-items:center;color:var(--red);font-weight:700;font-size:17px;flex:none}
+h1{font-size:27px;margin:0;line-height:1.1}
+header p{margin:6px 0 0;font-size:14px;color:var(--mute)}
+.stats{display:flex;margin:18px 0 0;border-top:1px solid var(--mute);border-bottom:1px solid var(--mute);padding:12px 0}
+.stats div{flex:1;text-align:center}
+.stats div+div{border-left:1px solid var(--mute)}
+.stats b{display:block;font-size:26px}
+.stats span{font-size:13px}
+.sub{display:flex;justify-content:space-between;font-size:13px;margin:12px 0 16px}
+.tabs{display:flex;gap:12px;margin-bottom:18px}
+.tabs button{flex:1;padding:16px 8px;font-size:15px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+select{width:100%;padding:13px 10px;font:inherit;font-size:15px;background:var(--btn);border:1px solid var(--ink);color:var(--ink)}
+.card{border:2px solid var(--ink);padding:6px;box-shadow:6px 6px 0 rgba(0,0,0,.08)}
+.in{border:1px solid var(--ink);background:var(--card);padding:20px 18px 18px}
+.lab{font-size:13px;color:var(--mute);letter-spacing:.1em}
+.verb{font-size:32px;margin:18px 0 6px;min-height:46px}
+.blank{display:inline-block;min-width:80px;border-bottom:3px dashed var(--ink);margin-left:12px;text-align:center;font-size:30px;color:var(--ok)}
+.ex{font-size:17px;font-style:italic;min-height:46px;margin:-2px 0 10px}.ex b{color:var(--red);font-style:normal}
+.hint{font-size:14px;color:var(--mute);min-height:20px;margin-bottom:12px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opts button{padding:18px 6px;font-size:20px;border:1px solid var(--ink);background:var(--btn);color:var(--ink);cursor:pointer}
+.opts button:focus-visible,.next:focus-visible,.tabs button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.opts button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.opts button.bad{background:var(--red);color:#fff;border-color:var(--red)}
+.opts button:disabled{cursor:default}
+.fb{min-height:56px;margin:18px 0 6px;font-size:17px}
+.next{width:100%;padding:16px;font-size:17px;border:0;background:var(--ink);color:var(--bg);cursor:pointer}
+.next:disabled{background:#aaa99d;cursor:default}
+.reset{margin-top:22px;background:none;border:0;color:var(--mute);text-decoration:underline;font-size:13px;cursor:pointer}
+@media(prefers-reduced-motion:no-preference){.opts button{transition:background .15s}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="stamp m">V+P</div>
+  <div><h1>Verb-Präposition-Kartei</h1><p class="m">Feste Präpositionen üben</p></div>
+</header>
+<div class="stats m">
+  <div><b id="xp">0</b><span>XP</span></div>
+  <div><b id="streak">0</b><span>Serie (Tage)</span></div>
+  <div><b id="total">0</b><span>Aktiv</span></div>
+</div>
+<div class="sub m"><span id="sNew"></span><span id="sLearn"></span><span id="sMast"></span></div>
+<div class="tabs m">
+  <button id="tAll" class="on">Alle Verben</button>
+  <button id="tBad">Nur ✗ falsche</button>
+</div>
+<div class="m" style="margin:-6px 0 18px"><select id="typ" aria-label="Typ"><option value="all">Alle Typen</option><option value="V">Nur Verben</option><option value="N">Nur Nomen</option><option value="A">Nur Adjektive</option></select></div>
+<section class="card"><div class="in">
+  <div class="lab m" id="lab"></div>
+  <div class="verb"><span id="verb"></span><span class="blank m" id="blank">&nbsp;</span></div>
+  <div class="hint m" id="hint"></div>
+  <div class="ex" id="ex"></div>
+  <div class="opts m" id="opts"></div>
+  <div class="fb" id="fb" aria-live="polite"></div>
+  <button class="next m" id="next" disabled>Nächste Karte →</button>
+</div></section>
+<button class="reset m" id="reset">Fortschritt zurücksetzen</button>
+</main>
+<script>
+// Format: Wort|Präposition|Kasus (A/D/AD)|weitere richtige Präpositionen (optional)
+const RV=`achten|auf|A;ankommen|auf|A;sich anpassen|an|A;antworten|auf|A;sich ärgern|über|A;aufpassen|auf|A;ausgeben|für|A;sich bedanken|für|AD|bei;sich begeistern|für|A;sich beklagen|über|AD|bei;berichten|über|AD|von;sich beschweren|über|AD|bei,um;sich bewerben|auf|AD|um,bei;sich beziehen|auf|A;bitten|um|A;danken|für|A;denken|an|A;diskutieren|über|AD|mit;eingehen|auf|A;sich einigen|auf|A;sich einsetzen|für|A;sich engagieren|für|A|gegen;sich entscheiden|für|A|gegen;sich entschuldigen|für|AD|bei;(sich) erinnern|an|A;erzählen|über|AD|von;sich freuen (Zukunft)|auf|A;sich freuen (Gegenwart)|über|A;sich gewöhnen|an|A;glauben|an|A;halten|für|AD|von;sich halten|an|A;es handelt sich|um|A;hinweisen|auf|A;hoffen|auf|A;(sich) informieren|über|A;sich interessieren|für|A;investieren|in|A;kämpfen|für|AD|gegen,um,mit;sich konzentrieren|auf|A;sich kümmern|um|A;lachen|über|A;nachdenken|über|A;reagieren|auf|A;reden|über|A;schimpfen|über|AD|mit;sorgen|für|A;sich sorgen|um|A;sich spezialisieren|auf|A;sprechen|über|AD|mit,von;speichern|auf|A;(sich) streiten|über|AD|um,mit;sich unterhalten|über|AD|mit;sich verlassen|auf|A;sich verlieben|in|A;verzichten|auf|A;sich vorbereiten|auf|A;warten|auf|A;sich wenden|an|A;werben|für|A;sich wundern|über|A;gratulieren|zu|D;handeln|mit|D|von;helfen|bei|D;hören|von|D;klarkommen|mit|D;klingen|nach|D;leiden|an|D|unter;liegen|an|D;sich melden|bei|D;motivieren|zu|D;nachfragen|bei|D;sich orientieren|an|D;passen|zu|D;raten|zu|D;(sich) retten|vor|D;sich richten|nach|D;schmecken|nach|D;sterben|an|D;teilnehmen|an|D;telefonieren|mit|D;träumen|von|D;sich treffen|mit|D;(sich) trennen|von|D;überreden|zu|D;überzeugen|von|D;umgehen|mit|D;unterbrechen|bei|D;sich unterscheiden|von|D;unterstützen|bei|D;sich verabreden|mit|D;sich verabschieden|von|D;verbinden|mit|D;vergleichen|mit|D;verlangen|von|D;(sich) verstecken|vor|D;sich verstehen|mit|D;vorbeikommen|bei|D;vorkommen|bei|D;vortragen|vor|D;weglaufen|vor|D;sich wünschen|von|D;zurückkommen|von|D;zählen|zu|D;zweifeln|an|D;zwingen|zu|D;abhalten|von|D;abhängen|von|D;sich abmelden|von|D;abraten|von|D;ändern|an|D;anfangen|mit|D;anrufen|bei|D;arbeiten|an|D|bei,in;aufhören|mit|D;ausgehen|von|D;sich auskennen|mit|D;sich austauschen|mit|D;sich befassen|mit|D;sich befinden|in|D;beginnen|mit|D;beitragen|zu|D;bestehen|aus|D;bestellen|bei|D;sich beteiligen|an|D;bringen|zu|D;einladen|zu|D;sich entschließen|zu|D;erhalten|von|D;sich erholen|von|D;erkennen|an|D;sich erkundigen|nach|D|bei;erwarten|von|D;erziehen|zu|D;experimentieren|mit|D;fragen|nach|D;führen|zu|D;gehören|zu|D`,RN=`die Aktion|für|A|gegen;die Angst|vor|AD|um;die Anregung|für|A;die Antwort|auf|A;der Ärger|über|A;das Argument|für|A|gegen;die Aussicht|auf|A;die Auswirkung|auf|A;die Begeisterung|für|A;die Begründung|für|A;die Bemühung|um|A;die Chance|auf|A;der Dank|für|A;die Diskussion|über|A;der Einfluss|auf|A;das Engagement|für|A|gegen;die Entscheidung|für|A|gegen;die Freude (Zukunft)|auf|A;die Freude (Gegenwart)|über|A;das Gespräch|über|AD|mit;die Gewöhnung|an|A;der Grund|für|A|gegen;die Hoffnung|auf|A;die Information|über|AD|zu;das Interesse|für|AD|an;die Konzentration|auf|A;die Reaktion|auf|A;das Recht|auf|A;die Ursache|für|A;die Verantwortung|für|A;der Verzicht|auf|A;die Voraussetzung|für|A;die Vorbereitung|auf|A;die Abhängigkeit|von|D;die Alternative|zu|D;die Änderung|an|D;die Anerkennung|von|D;die Arbeit|an|D;die Auseinandersetzung|mit|D;die Auswahl|an|D;die Beschäftigung|mit|D;die Beteiligung|an|D;der Entschluss|zu|D;die Erfahrung|mit|D;der Erfolg|in|D;die Furcht|vor|D;der Respekt|vor|D;der Schutz|vor|D;die Suche|nach|D;die Teilnahme|an|D;die Trennung|von|D;der Umgang|mit|D;die Verabredung|mit|D`,RA=`allergisch|auf|A|gegen;angewiesen|auf|A;bekannt|für|A;dankbar|für|A;erstaunt|über|A;froh|über|A;geeignet|für|A;gewöhnt|an|A;glücklich|über|A;informiert|über|A;spezialisiert|auf|A;stolz|auf|A;traurig|über|A;überrascht|über|AD|von;verantwortlich|für|A;verärgert|über|A;vorbereitet|auf|A;wichtig|für|A;zuständig|für|A;abhängig|von|D;alternativ|zu|D;arm / reich|an|D;ausgehend|von|D;begeistert|von|D;bereit|zu|D;beschäftigt|mit|D;beteiligt|an|D;betroffen|von|D;einverstanden|mit|D;entschlossen|zu|D;enttäuscht|von|D;erfahren|in|D;fähig|zu|D;interessiert|an|D;überzeugt|von|D;unabhängig|von|D;verbunden|mit|D;verwandt|mit|D;vorsichtig|mit|D|bei;zufrieden|mit|D`;
+const parse=(r,t)=>r.split(";").map(s=>{const a=s.split("|");return{t,v:a[0],p:a[1],c:a[2],alt:a[3]?a[3].split(","):[]}});
+const V=[...parse(RV,"V"),...parse(RN,"N"),...parse(RA,"A")];
+const key=x=>x.t+x.v+x.p;
+const TYPES={V:"Verb",N:"Nomen",A:"Adjektiv"};
+const CASES={A:"Akkusativ",D:"Dativ",AD:"Akk./Dat."};
+const EXR=`achten=Achte bitte auf deine Gesundheit.
+ankommen=Es kommt auf deine Erfahrung an.
+sich anpassen=Er passt sich an die neue Stadt an.
+antworten=Ich antworte auf deine E-Mail.
+sich ärgern=Ich ärgere mich über den Lärm.
+aufpassen=Kannst du auf mein Kind aufpassen?
+ausgeben=Wie viel gibst du für Kleidung aus?
+sich bedanken=Ich bedanke mich bei dir für deine Hilfe.
+sich begeistern=Sie begeistert sich für Fotografie.
+sich beklagen=Er beklagt sich bei mir über den Service.
+berichten=Die Zeitung berichtet über den Unfall.
+sich beschweren=Wir beschweren uns bei der Chefin über den Lärm.
+sich bewerben=Ich bewerbe mich um eine Stelle.
+sich beziehen=Ich beziehe mich auf deine Nachricht.
+bitten=Ich bitte dich um einen Gefallen.
+danken=Ich danke dir für deine Hilfe.
+denken=Ich denke oft an meine Familie.
+diskutieren=Wir diskutieren über das Thema.
+eingehen=Er geht auf meine Frage ein.
+sich einigen=Wir einigen uns auf einen Termin.
+sich einsetzen=Sie setzt sich für Tierschutz ein.
+sich engagieren=Er engagiert sich für den Umweltschutz.
+sich entscheiden=Ich entscheide mich für diese Wohnung.
+sich entschuldigen=Ich entschuldige mich bei dir für den Fehler.
+(sich) erinnern=Ich erinnere mich an unseren Urlaub.
+erzählen=Er erzählt von seiner Reise.
+sich freuen (Zukunft)=Ich freue mich auf den Urlaub.
+sich freuen (Gegenwart)=Ich freue mich über dein Geschenk.
+sich gewöhnen=Ich gewöhne mich an das Klima.
+glauben=Ich glaube an dich.
+halten=Ich halte ihn für einen guten Lehrer.
+sich halten=Bitte halte dich an die Regeln.
+es handelt sich=Es handelt sich um ein Missverständnis.
+hinweisen=Ich weise Sie auf den Fehler hin.
+hoffen=Wir hoffen auf besseres Wetter.
+(sich) informieren=Ich informiere mich über die Preise.
+sich interessieren=Er interessiert sich für Musik.
+investieren=Die Firma investiert in neue Maschinen.
+kämpfen=Sie kämpfen für bessere Löhne.
+sich konzentrieren=Ich konzentriere mich auf die Arbeit.
+sich kümmern=Wer kümmert sich um den Hund?
+lachen=Wir lachen über den Witz.
+nachdenken=Ich denke über dein Angebot nach.
+reagieren=Wie reagierst du auf Kritik?
+reden=Wir müssen über Geld reden.
+schimpfen=Er schimpft über das Wetter.
+sorgen=Ich sorge für gutes Essen.
+sich sorgen=Sie sorgt sich um ihre Mutter.
+sich spezialisieren=Er spezialisiert sich auf Steuerrecht.
+sprechen=Wir sprechen über unsere Pläne.
+speichern=Speichere die Datei auf dem Stick.
+(sich) streiten=Sie streiten über Politik.
+sich unterhalten=Wir unterhalten uns über Filme.
+sich verlassen=Ich verlasse mich auf dich.
+sich verlieben=Sie hat sich in einen Kollegen verliebt.
+verzichten=Ich verzichte auf Zucker.
+sich vorbereiten=Ich bereite mich auf die Prüfung vor.
+warten=Ich warte auf den Bus.
+sich wenden=Wenden Sie sich bitte an die Chefin.
+werben=Die Firma wirbt für ihre Produkte.
+sich wundern=Ich wundere mich über seine Antwort.
+gratulieren=Ich gratuliere dir zu deinem Erfolg.
+handeln=Er handelt mit Gebrauchtwagen.
+helfen=Hilfst du mir bei den Hausaufgaben?
+hören=Ich habe lange nichts von dir gehört.
+klarkommen=Ich komme gut mit meinem Chef klar.
+klingen=Das klingt nach einer guten Idee.
+leiden=Er leidet unter dem Lärm.
+liegen=Es liegt an dir.
+sich melden=Melde dich bei mir.
+motivieren=Ich motiviere dich zu einem Spaziergang.
+nachfragen=Frag bei der Firma nach.
+sich orientieren=Wir orientieren uns an den Regeln.
+passen=Die Jacke passt gut zu deiner Hose.
+raten=Ich rate dir zu einer Pause.
+(sich) retten=Er rettet sich vor dem Feuer.
+sich richten=Ich richte mich nach dir.
+schmecken=Das Eis schmeckt nach Vanille.
+sterben=Er starb an einer Krankheit.
+teilnehmen=Ich nehme an einem Kurs teil.
+telefonieren=Ich telefoniere mit meiner Mutter.
+träumen=Sie träumt von einem Haus.
+sich treffen=Ich treffe mich mit Freunden.
+(sich) trennen=Er trennt sich von seiner Freundin.
+überreden=Ich überrede dich zu einem Ausflug.
+überzeugen=Du überzeugst mich von deiner Idee.
+umgehen=Sie geht gut mit Stress um.
+unterbrechen=Unterbrich mich nicht bei der Arbeit.
+sich unterscheiden=Er unterscheidet sich von seinem Bruder.
+unterstützen=Kannst du mich bei der Arbeit unterstützen?
+sich verabreden=Ich verabrede mich mit einer Freundin.
+sich verabschieden=Wir verabschieden uns von den Gästen.
+verbinden=Ich verbinde Urlaub mit Erholung.
+vergleichen=Vergleiche den Preis mit dem Angebot.
+verlangen=Was verlangst du von mir?
+(sich) verstecken=Das Kind versteckt sich vor dem Hund.
+sich verstehen=Ich verstehe mich gut mit meiner Schwester.
+vorbeikommen=Komm doch bei mir vorbei!
+vorkommen=Das kommt bei uns oft vor.
+vortragen=Er trägt vor vielen Leuten vor.
+weglaufen=Du kannst nicht vor Problemen weglaufen.
+sich wünschen=Ich wünsche mir von dir ein Buch.
+zurückkommen=Er kommt von einer Reise zurück.
+zählen=Sie zählt zu den Besten.
+zweifeln=Ich zweifle an meiner Entscheidung.
+zwingen=Niemand zwingt dich zu dieser Arbeit.
+abhalten=Der Regen hält mich von der Arbeit ab.
+abhängen=Das hängt von deiner Entscheidung ab.
+sich abmelden=Ich melde mich von dem Kurs ab.
+abraten=Ich rate dir von diesem Plan ab.
+ändern=Ich kann an der Situation nichts ändern.
+anfangen=Wir fangen mit der Arbeit an.
+anrufen=Ruf bei der Firma an.
+arbeiten=Sie arbeitet an einem Projekt.
+aufhören=Hör mit dem Streit auf.
+ausgehen=Ich gehe von deiner Zusage aus.
+sich auskennen=Er kennt sich mit Computern aus.
+sich austauschen=Wir tauschen uns mit anderen aus.
+sich befassen=Wir befassen uns mit dem Thema.
+sich befinden=Wir befinden uns in der Stadt.
+beginnen=Wann beginnst du mit dem Job?
+beitragen=Ich trage zu der Diskussion bei.
+bestehen=Das Gericht besteht aus Reis und Gemüse.
+bestellen=Ich bestelle bei einem Händler.
+sich beteiligen=Ich beteilige mich an der Diskussion.
+bringen=Der Film bringt mich zu Tränen.
+einladen=Ich lade dich zu meiner Party ein.
+sich entschließen=Er entschließt sich zu einem Umzug.
+erhalten=Ich erhalte eine Nachricht von meiner Chefin.
+sich erholen=Ich erhole mich von der Arbeit.
+erkennen=Ich erkenne ihn an seiner Stimme.
+sich erkundigen=Ich erkundige mich bei der Schule nach Kursen.
+erwarten=Was erwartest du von mir?
+erziehen=Sie erziehen ihre Kinder zu Respekt.
+experimentieren=Wir experimentieren mit Farben.
+fragen=Ich frage nach dem Weg.
+führen=Das führt zu Problemen.
+gehören=Du gehörst zu unserem Team.
+die Aktion=Die Aktion für Kinder war ein Erfolg.
+die Angst=Ich habe Angst vor Hunden.
+die Anregung=Danke für die Anregung für das Projekt.
+die Antwort=Die Antwort auf meine Frage fehlt.
+der Ärger=Ich verstehe deinen Ärger über das Problem.
+das Argument=Das ist ein Argument für den Plan.
+die Aussicht=Die Aussicht auf Erfolg motiviert mich.
+die Auswirkung=Das hat Auswirkungen auf die Umwelt.
+die Begeisterung=Seine Begeisterung für Yoga ist groß.
+die Begründung=Was ist die Begründung für deine Entscheidung?
+die Bemühung=Seine Bemühungen um eine Stelle waren erfolgreich.
+die Chance=Wir haben eine Chance auf den Sieg.
+der Dank=Vielen Dank für Ihre Hilfe.
+die Diskussion=Die Diskussion über Geld war lang.
+der Einfluss=Das hat Einfluss auf mein Leben.
+das Engagement=Sein Engagement für Kinder ist toll.
+die Entscheidung=Die Entscheidung für diese Stadt fiel leicht.
+die Freude (Zukunft)=Meine Freude auf den Urlaub ist groß.
+die Freude (Gegenwart)=Ihre Freude über das Geschenk war groß.
+das Gespräch=Das Gespräch mit dir war schön.
+die Gewöhnung=Die Gewöhnung an das Klima dauert.
+der Grund=Was ist der Grund für deine Absage?
+die Hoffnung=Wir haben Hoffnung auf bessere Zeiten.
+die Information=Ich suche Informationen über die Prüfung.
+das Interesse=Sein Interesse an Autos ist groß.
+die Konzentration=Die Konzentration auf die Arbeit fällt schwer.
+die Reaktion=Wie war ihre Reaktion auf die Nachricht?
+das Recht=Jeder hat ein Recht auf Bildung.
+die Ursache=Was ist die Ursache für den Fehler?
+die Verantwortung=Er trägt die Verantwortung für das Team.
+der Verzicht=Der Verzicht auf Süßes fällt mir schwer.
+die Voraussetzung=Das ist die Voraussetzung für den Job.
+die Vorbereitung=Die Vorbereitung auf die Prüfung dauert lange.
+die Abhängigkeit=Die Abhängigkeit von dem Handy ist groß.
+die Alternative=Gibt es eine Alternative zu diesem Plan?
+die Änderung=Die Änderung an dem Gesetz ist wichtig.
+die Anerkennung=Die Anerkennung von meinem Chef freut mich.
+die Arbeit=Die Arbeit an diesem Projekt macht Spaß.
+die Auseinandersetzung=Die Auseinandersetzung mit dem Thema ist wichtig.
+die Auswahl=Es gibt eine große Auswahl an Büchern.
+die Beschäftigung=Die Beschäftigung mit Sprachen macht Spaß.
+die Beteiligung=Danke für die Beteiligung an unserem Projekt.
+der Entschluss=Der Entschluss zu diesem Schritt fiel schwer.
+die Erfahrung=Sie hat Erfahrung mit Kunden.
+der Erfolg=Er hatte Erfolg in seinem Beruf.
+die Furcht=Die Furcht vor dem Test ist groß.
+der Respekt=Ich habe Respekt vor deiner Arbeit.
+der Schutz=Der Schutz vor Lärm ist wichtig.
+die Suche=Die Suche nach einer Wohnung ist schwer.
+die Teilnahme=Die Teilnahme an dem Kurs macht Spaß.
+die Trennung=Die Trennung von der Familie fällt schwer.
+der Umgang=Der Umgang mit Geld muss gelernt werden.
+die Verabredung=Die Verabredung mit meinem Freund war schön.
+allergisch=Er ist allergisch gegen Nüsse.
+angewiesen=Er ist auf deine Hilfe angewiesen.
+bekannt=Die Stadt ist für ihren Käse bekannt.
+dankbar=Wir sind dankbar für deine Hilfe.
+erstaunt=Er war über die Nachricht erstaunt.
+froh=Ich bin froh über das schöne Wetter.
+geeignet=Die Jacke ist für Regen geeignet.
+gewöhnt=Ich bin an die Kälte gewöhnt.
+glücklich=Sie ist glücklich über ihren Job.
+informiert=Bist du über die Regeln informiert?
+spezialisiert=Er ist auf Recht spezialisiert.
+stolz=Ich bin stolz auf dich.
+traurig=Er ist traurig über den Abschied.
+überrascht=Ich bin über deine Antwort überrascht.
+verantwortlich=Sie ist für das Projekt verantwortlich.
+verärgert=Er war über den Anruf verärgert.
+vorbereitet=Bist du auf die Prüfung vorbereitet?
+wichtig=Das ist wichtig für mich.
+zuständig=Sie ist für die Webseite zuständig.
+abhängig=Bist du von deinem Handy abhängig?
+alternativ=Was bieten Sie alternativ zu diesem Plan an?
+arm / reich=Das Land ist reich an Rohstoffen.
+ausgehend=Ausgehend von der Statistik planen wir weiter.
+begeistert=Sie ist von dem Film begeistert.
+bereit=Bist du bereit zu dieser Aufgabe?
+beschäftigt=Er ist mit seiner Arbeit beschäftigt.
+beteiligt=Warst du an dem Projekt beteiligt?
+betroffen=Viele waren von dem Sturm betroffen.
+einverstanden=Ich bin mit deinem Vorschlag einverstanden.
+entschlossen=Er ist zu diesem Schritt entschlossen.
+enttäuscht=Sie ist von dem Ergebnis enttäuscht.
+erfahren=Er ist in Verhandlungen erfahren.
+fähig=Sie ist zu dieser Arbeit fähig.
+interessiert=Bist du an Büchern interessiert?
+überzeugt=Ich bin von der Idee überzeugt.
+unabhängig=Du bist unabhängig von mir.
+verbunden=Ich bin mit ihm verbunden.
+verwandt=Seid ihr mit Herrn Carl verwandt?
+vorsichtig=Sei vorsichtig mit dem Glas.
+zufrieden=Er ist zufrieden mit seiner Arbeit.`;
+const EX={};EXR.split("\n").forEach(l=>{const i=l.indexOf("=");if(i>0)EX[l.slice(0,i)]=l.slice(i+1)});
+const PREPS=[...new Set(V.map(x=>x.p))];
+const KEY="verb-praep-v1";
+let S={xp:0,streak:0,last:"",prog:{}};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const day=d=>d.toISOString().slice(0,10);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+let mode="all",deck=[],idx=0,cur=null,answered=false;
+
+function pool(){
+  const t=$("typ").value;const base=t==="all"?V:V.filter(x=>x.t===t);
+  if(mode==="bad"){const b=base.filter(x=>(S.prog[key(x)]||{}).bad);if(b.length)return b}
+  return base;
+}
+function buildDeck(){deck=shuffle(pool());idx=0}
+function stats(){
+  $("xp").textContent=S.xp;$("streak").textContent=S.streak;$("total").textContent=pool().length;
+  let n=0,l=0,m=0;
+  V.forEach(x=>{const p=S.prog[key(x)];const o=p?p.ok:0;if(!o)n++;else if(o<3)l++;else m++});
+  $("sNew").textContent="Neu "+n;$("sLearn").textContent="Gelernt "+l;$("sMast").textContent="Gemeistert "+m;
+}
+function show(){
+  if(idx>=deck.length)buildDeck();
+  cur=deck[idx];answered=false;
+  const wrong=shuffle(PREPS.filter(p=>p!==cur.p&&!cur.alt.includes(p))).slice(0,3);
+  $("lab").textContent="KARTE "+(idx+1)+"/"+deck.length+" · "+TYPES[cur.t];
+  $("verb").textContent=cur.v;
+  $("blank").innerHTML="&nbsp;";
+  $("hint").textContent="";$("ex").textContent="";$("fb").textContent="";
+  $("next").disabled=true;
+  const o=$("opts");o.innerHTML="";
+  shuffle([cur.p,...wrong]).forEach(p=>{
+    const b=document.createElement("button");b.textContent=p;b.onclick=()=>pick(b,p);o.appendChild(b);
+  });
+  stats();
+}
+function pick(btn,p){
+  if(answered)return;answered=true;
+  const k=key(cur);const pr=S.prog[k]||(S.prog[k]={ok:0,bad:false});
+  const good=p===cur.p||cur.alt.includes(p);
+  [...$("opts").children].forEach(b=>{b.disabled=true;if(b.textContent===cur.p)b.classList.add("ok")});
+  const t=day(new Date());
+  if(S.last!==t){const y=new Date();y.setDate(y.getDate()-1);S.streak=S.last===day(y)?S.streak+1:1;S.last=t}
+  if(good){pr.ok++;pr.bad=false;S.xp+=10;$("fb").textContent="✓ Richtig! +10 XP"}
+  else{btn.classList.add("bad");pr.bad=true;pr.ok=Math.max(0,pr.ok-1);$("fb").textContent="✗ Richtig ist: "+[cur.p,...cur.alt].join(" / ")}
+  $("blank").textContent=cur.p;
+  $("hint").textContent=cur.v.replace(/\s*\(.*\)/,"")+" "+[cur.p,...cur.alt].join("/")+" + "+CASES[cur.c];
+  const ex=EX[cur.v],e=$("ex");e.textContent="";
+  if(ex){const ok=[cur.p,...cur.alt];ex.split(" ").forEach((w,i)=>{if(i)e.append(" ");const c=w.replace(/[.,!?]/g,"");if(ok.includes(c.toLowerCase())){const b=document.createElement("b");b.textContent=c;e.append(b,w.slice(c.length))}else e.append(w)})}
+  $("next").disabled=false;$("next").focus();
+  save();stats();
+}
+$("next").onclick=()=>{idx++;show()};
+function setMode(m){mode=m;$("tAll").classList.toggle("on",m==="all");$("tBad").classList.toggle("on",m==="bad");buildDeck();show()}
+$("tAll").onclick=()=>setMode("all");
+$("tBad").onclick=()=>setMode("bad");
+$("typ").onchange=()=>{buildDeck();show()};
+$("reset").onclick=()=>{if(confirm("Gesamten Fortschritt löschen?")){S={xp:0,streak:0,last:"",prog:{}};save();setMode("all")}};
+buildDeck();show();
+</script>
+</body>
+</html>
